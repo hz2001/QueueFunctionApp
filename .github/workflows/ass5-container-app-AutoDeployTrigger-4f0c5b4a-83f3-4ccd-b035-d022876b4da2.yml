@@ -1,0 +1,60 @@
+name: Trigger auto deployment for ass5-container-app
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ master ]
+    paths:
+    - '**'
+    - '.github/workflows/ass5-container-app-AutoDeployTrigger-4f0c5b4a-83f3-4ccd-b035-d022876b4da2.yml'
+
+  # Allow mannually trigger 
+  workflow_dispatch:      
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ass5continerregistry.azurecr.io
+          username: ${{ secrets.ASS5CONTAINERAPP_REGISTRY_USERNAME }}
+          password: ${{ secrets.ASS5CONTAINERAPP_REGISTRY_PASSWORD }}
+
+      - name: Build and push container image to registry
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ass5continerregistry.azurecr.io/ass5-container-app:${{ github.sha }}
+          file: ./Dockerfile
+          context: ./
+
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.ASS5CONTAINERAPP_AZURE_CREDENTIALS }}
+
+
+      - name: Deploy to containerapp
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az config set extension.use_dynamic_install=yes_without_prompt
+            az containerapp registry set -n ass5-container-app -g DS519Assignment5 --server ass5continerregistry.azurecr.io --username  ${{ secrets.ASS5CONTAINERAPP_REGISTRY_USERNAME }} --password ${{ secrets.ASS5CONTAINERAPP_REGISTRY_PASSWORD }}
+            az containerapp update -n ass5-container-app -g DS519Assignment5 --image ass5continerregistry.azurecr.io/ass5-container-app:${{ github.sha }}
