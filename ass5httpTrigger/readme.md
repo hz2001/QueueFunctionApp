@@ -1,11 +1,3 @@
 # QueueTrigger - JavaScript
 
-The `QueueTrigger` makes it incredibly easy to react to new Queues inside of Azure Queue Storage. This sample demonstrates a simple use case of processing data from a given Queue using C#.
-
-## How it works
-
-For a `QueueTrigger` to work, you provide a path which dictates where the queue messages are located inside your container.
-
-## Learn more
-
-<TODO> Documentation
+The `QueueTrigger` will append the url image in the query message which it is being called to the queue. 
